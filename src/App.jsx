@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 import axios from 'axios';
-import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, History, Star, Gamepad2, ChevronRight, ScanLine, Loader } from 'lucide-react';
+import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, ChevronRight, ScanLine, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatInterface from './chatInterface';
 import { openai } from './openaiClient';
@@ -14,7 +14,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
   
-  // Gamification States (Placeholders for the vibe)
+  // Gamification States
   const [xp, setXp] = useState(340);
   const [level, setLevel] = useState(3);
 
@@ -22,6 +22,49 @@ const App = () => {
     const badGrades = ['C', 'D', 'F'];
     if (badGrades.includes(grade) && navigator.vibrate) {
       navigator.vibrate([500, 200, 500]);
+    }
+  };
+
+  // --- HELPER: Generate Subpoints for the Grid ---
+  const getTopicDetails = (topicId) => {
+    if (!productData || !analysis) return { points: ["Loading...", "Loading..."] };
+    const n = productData.nutriments;
+
+    switch (topicId) {
+      case 'nutrition':
+        return {
+          points: [
+            `${Math.round(n['energy-kcal_100g'] || 0)} calories`,
+            n['sugars_100g'] > 10 ? 'High Sugar' : 'Low Sugar'
+          ]
+        };
+      case 'ingredients':
+        const additivesCount = productData.additives_tags?.length || 0;
+        const palmOil = productData.ingredients_text?.toLowerCase().includes('palm');
+        return {
+          points: [
+            `${additivesCount} Additives`,
+            palmOil ? 'Contains Palm Oil' : 'No Palm Oil'
+          ]
+        };
+      case 'risks':
+        const risk1 = analysis.health_risks?.[0] || "None detected";
+        const risk2 = analysis.health_risks?.[1] || "Safe to consume";
+        return {
+          points: [
+            risk1.length > 15 ? risk1.substring(0, 15) + '...' : risk1,
+            risk2.length > 15 ? risk2.substring(0, 15) + '...' : risk2
+          ]
+        };
+      case 'alternatives':
+        return {
+          points: [
+            "Better options",
+            "Healthier swaps"
+          ]
+        };
+      default:
+        return { points: [] };
     }
   };
 
@@ -84,28 +127,6 @@ const App = () => {
     }
   };
 
-  const getTopicPreview = (id) => {
-    if (!productData || !analysis) return [];
-    const n = productData.nutriments;
-    
-    switch(id) {
-      case 'nutrition':
-        const cals = n['energy-kcal_100g'] ? `${Math.round(n['energy-kcal_100g'])} kcal` : 'N/A';
-        const highSugar = (n['sugars_100g'] > 10) ? `High Sugar (${Math.round(n['sugars_100g'])}g)` : null;
-        return [cals, highSugar || "Balanced Macros"];
-      case 'health':
-        const risk = analysis.health_risks?.[0] || "No major alerts";
-        const additiveCount = productData.additives_tags?.length || 0;
-        return [risk.substring(0, 15) + (risk.length>15 ? '...' : ''), `${additiveCount} Additives found`];
-      case 'ingredients':
-        const firstIng = productData.ingredients_text?.split(',')[0]?.substring(0,15) || "Unknown base";
-        return [`Base: ${firstIng}`];
-      case 'alternatives':
-        return ["Lower sugar options", "Cleaner labels"];
-      default: return [];
-    }
-  };
-
   const fetchProduct = async (barcode) => {
     setLoading(true);
     try {
@@ -122,13 +143,6 @@ const App = () => {
       alert("Error fetching product data.");
     }
     setLoading(false);
-  };
-
-  const topicConfig = {
-    nutrition: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
-    health: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
-    ingredients: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
-    alternatives: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
   };
 
   // --- BACKGROUND PATTERN ---
@@ -280,7 +294,7 @@ const App = () => {
               </motion.div>
             )}
 
-            {/* VIEW: SCANNER (Keeping existing logic, tweaking style) */}
+            {/* VIEW: SCANNER */}
             {view === 'scan' && (
               <motion.div 
                 key="scan"
@@ -343,7 +357,7 @@ const App = () => {
               </motion.div>
             )}
 
-            {/* VIEW: ANALYZING (Gamified Loading) */}
+            {/* VIEW: ANALYZING */}
             {view === 'analyzing' && (
               <motion.div 
                 key="analyzing"
@@ -357,67 +371,120 @@ const App = () => {
               </motion.div>
             )}
 
-            {/* VIEW: RESULT CARD (Keeping logic, updating frame) */}
+            {/* VIEW: RESULT CARD (Refined & Moved) */}
             {view === 'result_card' && productData && analysis && (
               <motion.div 
                 key="result_card"
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="absolute inset-0 flex flex-col bg-[#F2F3F5]"
+                className="absolute inset-0 flex flex-col bg-[#F2F3F5] overflow-y-auto no-scrollbar"
               >
-                <div className="flex-1 overflow-y-auto pb-32 px-4 pt-4">
-                   {/* SCORE CARD */}
-                   <div className={`
-                     p-6 rounded-[2rem] border-2 border-black border-b-8 mb-6 relative overflow-hidden
-                     ${['F','D'].includes(analysis.grade) ? 'bg-red-500 text-white' : 
-                       ['C'].includes(analysis.grade) ? 'bg-yellow-400 text-black' :
-                       'bg-green-500 text-white'}
-                   `}>
-                     <div className="flex justify-between items-start relative z-10">
-                       <div className="flex-1">
-                         <div className="font-black text-xs uppercase opacity-70 mb-1 tracking-widest">ITEM GRADE</div>
-                         <div className="text-7xl font-black leading-none">{analysis.grade}</div>
-                       </div>
-                       <div className="bg-black/10 p-2 rounded-xl backdrop-blur-sm">
-                         <img src={productData.image_url} className="w-16 h-16 object-contain" />
-                       </div>
-                     </div>
-                     <p className="mt-4 font-bold text-lg leading-tight opacity-90">"{analysis.reasoning}"</p>
-                   </div>
+                <div className="px-6 pt-8 pb-32">
+                  
+                  {/* 1. PRODUCT NAME */}
+                  <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-4 break-words">
+                    {productData.product_name}
+                  </h1>
 
-                   {/* Stats Grid */}
-                   <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { id: 'nutrition', label: 'Stats', icon: '📊' },
-                        { id: 'health', label: 'Debuffs', icon: '💀' },
-                        { id: 'ingredients', label: 'Crafting', icon: '🧪' },
-                        { id: 'alternatives', label: 'Loot', icon: '💎' }
-                      ].map((topic) => (
+                  {/* 2. BIG IMAGE & GRADE (MOVED) */}
+                  <div className="relative mb-6 mt-8">
+                    {/* The Image Card with Colored Border */}
+                    <div className={`
+                      bg-white rounded-[2rem] border-4 border-b-[8px] p-6 shadow-xl relative z-10 overflow-hidden
+                      ${['F','D'].includes(analysis.grade) ? 'border-red-500' : 
+                        ['C'].includes(analysis.grade) ? 'border-yellow-400' :
+                        'border-green-500'}
+                    `}>
+                       <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
+                       <div className="w-full aspect-[4/3] flex items-center justify-center relative z-10">
+                          <img 
+                            src={productData.image_url} 
+                            className="max-w-full max-h-full object-contain drop-shadow-xl" 
+                            alt="Product"
+                          />
+                       </div>
+                    </div>
+
+                    {/* The Grade Badge (Floating TOP RIGHT) */}
+                    <div className={`
+                      absolute -top-6 -right-4 z-20 w-20 h-20 rounded-2xl border-4 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] flex items-center justify-center
+                      ${['F','D'].includes(analysis.grade) ? 'bg-red-500 text-white' : 
+                        ['C'].includes(analysis.grade) ? 'bg-yellow-400 text-black' :
+                        'bg-green-500 text-white'}
+                    `}>
+                      <span className="text-5xl font-black">{analysis.grade}</span>
+                    </div>
+                  </div>
+
+                  {/* 3. VERDICT REASONING (REVERTED TO STACKED) */}
+                  <div className="mb-8 px-2">
+                    <div className="inline-block bg-black text-white text-[10px] font-bold px-2 py-1 rounded mb-1 uppercase tracking-widest">
+                      Oracle Verdict
+                    </div>
+                    <p className="text-lg font-bold text-slate-800 leading-tight">
+                      {analysis.reasoning}
+                    </p>
+                  </div>
+
+                  {/* 4. TOPICS GRID (FIXED: INLINE EMOJI + LABEL) */}
+                  <h3 className="font-black text-xs uppercase text-slate-400 tracking-widest mb-3 px-1">
+                    Analysis Data
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'ingredients', label: 'Ingredients', icon: '🧪' },
+                      { id: 'nutrition', label: 'Nutrition', icon: '📊' },
+                      { id: 'risks', label: 'Risks', icon: '💀' },
+                      { id: 'alternatives', label: 'Alternatives', icon: '💎' }
+                    ].map((topic) => {
+                      const details = getTopicDetails(topic.id);
+                      
+                      return (
                         <button
-                            key={topic.id}
-                            onClick={() => { setSelectedTopic(topic.id); setView('chat'); }}
-                            className="bg-white p-4 rounded-2xl border-2 border-slate-200 border-b-4 text-left active:scale-95 transition-transform"
+                          key={topic.id}
+                          onClick={() => { setSelectedTopic(topic.id); setView('chat'); }}
+                          className="relative p-4 rounded-2xl border-2 border-black border-b-[6px] text-left transition-all active:border-b-2 active:translate-y-1 bg-white"
                         >
-                          <div className="text-2xl mb-2">{topic.icon}</div>
-                          <div className="font-black text-slate-900 uppercase text-sm">{topic.label}</div>
-                          <div className="text-xs text-slate-400 font-bold mt-1">Click to view</div>
+                          {/* UPDATED: Flex container to put Icon and Label on same line */}
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-2xl">{topic.icon}</span>
+                            <span className="font-black text-slate-900 uppercase text-xs tracking-wide">{topic.label}</span>
+                          </div>
+
+                          <div className="space-y-1 mb-3">
+                             {details.points.map((p, i) => (
+                               <div key={i} className="flex items-center gap-1.5">
+                                 <div className="w-1.5 h-1.5 bg-black rounded-full shrink-0" />
+                                 <span className="text-[10px] font-bold text-slate-500 leading-tight truncate">
+                                   {p}
+                                 </span>
+                               </div>
+                             ))}
+                          </div>
+
+                          <div className="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 text-[8px] font-black uppercase text-slate-600">
+                             Know More
+                          </div>
                         </button>
-                      ))}
-                   </div>
+                      );
+                    })}
+                  </div>
+
                 </div>
 
                 {/* Floating Chat Button */}
-                <div className="fixed bottom-6 left-6 right-6">
+                <div className="fixed bottom-6 left-6 right-6 z-30">
                   <button 
                     onClick={() => setView('chat')} 
-                    className="w-full py-4 bg-indigo-600 border-2 border-black border-b-4 text-white rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-wider shadow-xl active:border-b-2 active:translate-y-1"
+                    className="w-full py-4 bg-[#5865F2] border-2 border-black border-b-[6px] text-white rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-wider shadow-xl active:border-b-2 active:translate-y-1 hover:brightness-110"
                   >
                     <MessageCircle size={24} strokeWidth={3} /> Open Comms
                   </button>
                 </div>
               </motion.div>
             )}
-
+            
             {/* VIEW: CHAT */}
             {view === 'chat' && (
               <motion.div 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Image as ImageIcon, Loader, ChevronLeft, Bot, Sparkles, Zap, Skull, ShieldCheck, Sword } from 'lucide-react';
+import { Send, Image as ImageIcon, Loader, ChevronLeft, Bot, Sparkles, Zap, Skull, ShieldCheck, Sword, Flame, Droplets, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,77 +11,138 @@ const VerdictCard = ({ data, analysis }) => {
   const isDeadly = ['F', 'D'].includes(grade);
   const isMid = ['C'].includes(grade);
   
-  // Dynamic Styles based on "Health"
-  const theme = isDeadly 
-    ? { bg: 'bg-red-500', light: 'bg-red-50', text: 'text-red-600', border: 'border-red-500', icon: <Skull size={20} /> }
-    : isMid 
-      ? { bg: 'bg-yellow-400', light: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-400', icon: <ShieldCheck size={20} /> }
-      : { bg: 'bg-green-500', light: 'bg-green-50', text: 'text-green-600', border: 'border-green-500', icon: <Sparkles size={20} /> };
-
-  const sugar = data.nutriments['sugars_100g'] || 0;
-  const protein = data.nutriments['proteins_100g'] || 0;
+  // --- DATA EXTRACTION ---
+  const n = data.nutriments;
+  const sugar = n['sugars_100g'] || 0;
+  const protein = n['proteins_100g'] || 0;
+  const fat = n['fat_100g'] || 0;
+  const carbs = n['carbohydrates_100g'] || 0;
+  const sodium = n['sodium_100g'] || 0; // In grams
+  const calories = Math.round(n['energy-kcal_100g'] || 0);
   const additives = data.additives_tags?.length || 0;
 
+  // --- THEME LOGIC ---
+  const theme = isDeadly 
+    ? { bg: 'bg-red-500', text: 'text-red-600', border: 'border-red-500', icon: <Skull size={24} /> }
+    : isMid 
+      ? { bg: 'bg-[#FFD028]', text: 'text-yellow-800', border: 'border-[#FFD028]', icon: <ShieldCheck size={24} /> }
+      : { bg: 'bg-[#00E054]', text: 'text-green-800', border: 'border-[#00E054]', icon: <Sparkles size={24} /> };
+
+  // --- MACRO BAR CALCULATION ---
+  // We normalize to 100% based on the sum of macros + water/fiber (approx 100g)
+  const totalMass = 100; 
+  const p_perc = Math.min((protein / totalMass) * 100, 100);
+  const f_perc = Math.min((fat / totalMass) * 100, 100);
+  const c_perc = Math.min((carbs / totalMass) * 100, 100);
+  // The remaining % is Water/Fiber (The new "Grey Space", but smaller and labeled)
+
   return (
-    <div className="bg-white rounded-[1.5rem] border-2 border-black border-b-[6px] shadow-sm overflow-hidden w-full max-w-sm mb-4 relative">
-      {/* HEADER */}
-      <div className={`${theme.bg} p-4 flex justify-between items-center border-b-2 border-black`}>
-        <div className="text-white">
-          <h3 className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Item Appraisal</h3>
-          <div className="font-bold text-sm leading-tight pr-4 text-black mix-blend-multiply">
-            "{analysis.reasoning}"
+    <div className="bg-white rounded-[1.5rem] border-2 border-black border-b-[6px] shadow-sm overflow-hidden w-full max-w-sm mb-4 relative font-sans">
+      
+      {/* 1. HEADER CARD */}
+      <div className={`${theme.bg} p-4 flex justify-between items-start border-b-2 border-black relative overflow-hidden`}>
+        {/* Decorative Pattern */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" 
+             style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
+        
+        <div className="relative z-10 pr-2 flex-1">
+          <div className="flex flex-wrap items-center gap-1 mb-1">
+             {isDeadly && <div className="bg-black text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Junk</div>}
+             {additives > 2 && <div className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase animate-pulse">☣ Toxic</div>}
+             {!isDeadly && additives <= 2 && <div className="bg-black text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Item Appraisal</div>}
+          </div>
+          <h3 className="font-black text-lg leading-tight text-black mix-blend-multiply uppercase italic mb-1">
+            {data.product_name || 'Unknown Product'}
+          </h3>
+          <div className="text-xs font-bold text-black/70 leading-tight">
+            {analysis.reasoning}
           </div>
         </div>
-        <div className="w-16 h-16 bg-white border-2 border-black rounded-xl flex flex-col items-center justify-center shrink-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
+
+        <div className="relative z-10 w-14 h-14 bg-white border-2 border-black rounded-xl flex flex-col items-center justify-center shrink-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] ml-2">
           <span className={`text-4xl font-black ${theme.text}`}>{grade}</span>
         </div>
       </div>
 
-      {/* STATS AREA */}
-      <div className="p-4 space-y-4">
+      {/* 2. MAIN STATS GRID */}
+      <div className="p-4 grid grid-cols-2 gap-3">
         
-        {/* CHECKLIST */}
-        <div className="bg-slate-50 rounded-xl border border-black p-3 space-y-2">
-           <div className="flex justify-between items-center border-b border-dashed border-slate-300 pb-2 mb-2">
-              <span className="text-xs font-black uppercase text-slate-400">Stat Check</span>
-              <span className="text-[10px] bg-black text-white px-2 rounded-full">LVL 1</span>
+        {/* XP / Calories */}
+        <div className="bg-slate-50 border border-black rounded-xl p-2 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg border border-orange-200"><Flame size={14} strokeWidth={3}/></div>
+              <span className="text-[10px] font-black uppercase text-slate-500">Energy</span>
            </div>
-           
-           {/* Row 1: Sugar */}
-           <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                 <div className={`w-4 h-4 rounded border border-black ${sugar > 10 ? 'bg-red-500' : 'bg-green-500'}`} />
-                 <span className="font-bold text-xs uppercase">Sugar Lvl</span>
-              </div>
-              <span className="font-mono text-xs">{Math.round(sugar)}g</span>
-           </div>
-
-           {/* Row 2: Additives */}
-           <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                 <div className={`w-4 h-4 rounded border border-black ${additives > 1 ? 'bg-red-500' : 'bg-green-500'}`} />
-                 <span className="font-bold text-xs uppercase">Chemicals</span>
-              </div>
-              <span className="font-mono text-xs">{additives} detected</span>
-           </div>
+           <span className="font-black text-sm text-slate-900">{calories} <span className="text-[10px] text-slate-400">XP</span></span>
         </div>
 
-        {/* BARS */}
-        <div>
-           <div className="flex justify-between text-[10px] font-black uppercase mb-1">
-              <span>Energy Composition</span>
+        {/* Sodium */}
+        <div className="bg-slate-50 border border-black rounded-xl p-2 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg border border-blue-200"><Droplets size={14} strokeWidth={3}/></div>
+              <span className="text-[10px] font-black uppercase text-slate-500">Salt</span>
            </div>
-           <div className="flex h-4 w-full rounded-full overflow-hidden border-2 border-black">
-             <div className="bg-yellow-400 border-r-2 border-black" style={{ width: `${Math.min((sugar / 30) * 100, 100)}%` }} /> 
-             <div className="bg-blue-500 border-r-2 border-black" style={{ width: `${Math.min((protein / 30) * 100, 100)}%` }} /> 
-             <div className="bg-slate-200 flex-1" /> 
+           <span className={`font-black text-sm ${sodium > 0.5 ? 'text-red-500' : 'text-slate-900'}`}>
+             {sodium * 1000 < 1000 ? `${Math.round(sodium*1000)}mg` : `${sodium}g`}
+           </span>
+        </div>
+
+        {/* Sugar */}
+        <div className="bg-slate-50 border border-black rounded-xl p-2 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-yellow-100 text-yellow-600 rounded-lg border border-yellow-200"><Zap size={14} strokeWidth={3}/></div>
+              <span className="text-[10px] font-black uppercase text-slate-500">Sugar</span>
            </div>
-           <div className="flex gap-3 mt-2 text-[10px] font-bold uppercase">
-              <div className="flex items-center gap-1"><div className="w-2 h-2 bg-yellow-400 rounded-full border border-black"/>Sugar</div>
-              <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500 rounded-full border border-black"/>Protein</div>
+           <span className={`font-black text-sm ${sugar > 10 ? 'text-red-500' : 'text-slate-900'}`}>{Math.round(sugar)}g</span>
+        </div>
+
+        {/* Chemicals */}
+        <div className="bg-slate-50 border border-black rounded-xl p-2 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-100 text-purple-600 rounded-lg border border-purple-200"><Activity size={14} strokeWidth={3}/></div>
+              <span className="text-[10px] font-black uppercase text-slate-500">Additives</span>
            </div>
+           <span className="font-black text-sm text-slate-900">{additives}</span>
         </div>
       </div>
+
+      {/* 3. MACRO SPLIT BAR (The "Grey Space" Fix) */}
+      <div className="px-4 pb-4">
+         <div className="flex justify-between items-end mb-2">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Composition Build</span>
+         </div>
+         
+         {/* The Stacked Bar */}
+         <div className="flex h-5 w-full rounded-full overflow-hidden border-2 border-black bg-slate-100 relative">
+           {/* Carbs */}
+           <div className="bg-[#FFD028] h-full border-r-2 border-black relative group" style={{ width: `${c_perc}%` }} />
+           {/* Fat */}
+           <div className="bg-[#FF90E8] h-full border-r-2 border-black relative group" style={{ width: `${f_perc}%` }} />
+           {/* Protein */}
+           <div className="bg-[#5865F2] h-full border-r-2 border-black relative group" style={{ width: `${p_perc}%` }} />
+         </div>
+
+         {/* Legend */}
+         <div className="flex gap-4 mt-2 justify-center">
+            <div className="flex items-center gap-1.5">
+               <div className="w-2.5 h-2.5 bg-[#FFD028] rounded border border-black" />
+               <span className="text-[10px] font-bold uppercase text-slate-600">Carbs</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+               <div className="w-2.5 h-2.5 bg-[#FF90E8] rounded border border-black" />
+               <span className="text-[10px] font-bold uppercase text-slate-600">Fat</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+               <div className="w-2.5 h-2.5 bg-[#5865F2] rounded border border-black" />
+               <span className="text-[10px] font-bold uppercase text-slate-600">Prot</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+               <div className="w-2.5 h-2.5 bg-[#FFFFFF] rounded border border-black" />
+               <span className="text-[10px] font-bold uppercase text-slate-600">Others</span>
+            </div>
+         </div>
+      </div>
+
     </div>
   );
 };
