@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 import axios from 'axios';
-import { Camera, MessageCircle, AlertTriangle, Check, X, Send, Image as ImageIcon, Loader, ChevronLeft, Zap } from 'lucide-react';
+import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, History, Star, Gamepad2, ChevronRight, ScanLine, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import ChatInterface from './chatInterface';
 import { openai } from './openaiClient';
 
@@ -15,6 +13,10 @@ const App = () => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
+  
+  // Gamification States (Placeholders for the vibe)
+  const [xp, setXp] = useState(340);
+  const [level, setLevel] = useState(3);
 
   const handleVibration = (grade) => {
     const badGrades = ['C', 'D', 'F'];
@@ -80,10 +82,8 @@ const App = () => {
       alert("The Judge is sleeping (API Error).");
       setView('home');
     }
-  }; // <--- Fixed: Analyze function ends here
+  };
 
-  // --- HELPER: Generate Preview Points for Cards ---
-  // <--- Fixed: This is now correctly placed at the component level
   const getTopicPreview = (id) => {
     if (!productData || !analysis) return [];
     const n = productData.nutriments;
@@ -92,22 +92,16 @@ const App = () => {
       case 'nutrition':
         const cals = n['energy-kcal_100g'] ? `${Math.round(n['energy-kcal_100g'])} kcal` : 'N/A';
         const highSugar = (n['sugars_100g'] > 10) ? `High Sugar (${Math.round(n['sugars_100g'])}g)` : null;
-        const highProtein = (n['proteins_100g'] > 10) ? `High Protein (${Math.round(n['proteins_100g'])}g)` : null;
-        return [cals, highSugar || highProtein || "Balanced Macros"];
-      
+        return [cals, highSugar || "Balanced Macros"];
       case 'health':
         const risk = analysis.health_risks?.[0] || "No major alerts";
         const additiveCount = productData.additives_tags?.length || 0;
         return [risk.substring(0, 15) + (risk.length>15 ? '...' : ''), `${additiveCount} Additives found`];
-
       case 'ingredients':
-        const isPalm = productData.ingredients_text?.toLowerCase().includes('palm');
         const firstIng = productData.ingredients_text?.split(',')[0]?.substring(0,15) || "Unknown base";
-        return [`Base: ${firstIng}`, isPalm ? "⚠️ Palm Oil" : "✅ No Palm Oil"];
-
+        return [`Base: ${firstIng}`];
       case 'alternatives':
         return ["Lower sugar options", "Cleaner labels"];
-        
       default: return [];
     }
   };
@@ -130,8 +124,6 @@ const App = () => {
     setLoading(false);
   };
 
-  // --- COLORS CONFIGURATION ---
-  // We explicitly define classes here so Tailwind doesn't purge them
   const topicConfig = {
     nutrition: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
     health: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
@@ -139,25 +131,54 @@ const App = () => {
     alternatives: { color: 'blue', dot: 'bg-blue-400', pill: 'bg-blue-50 text-blue-600', active: 'active:border-blue-300' },
   };
 
+  // --- BACKGROUND PATTERN ---
+  const BgPattern = () => (
+    <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
+      style={{
+        backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
+        backgroundSize: '20px 20px'
+      }}
+    />
+  );
+
   return (
-    <div className="h-[100dvh] bg-slate-50 text-slate-900 font-sans overflow-hidden relative">
+    <div className="h-[100dvh] bg-[#F2F3F5] text-slate-900 font-sans overflow-hidden relative">
+      <BgPattern />
       
       <div className="relative z-10 max-w-md mx-auto h-full flex flex-col">
         
-        {/* HEADER */}
+        {/* HEADER: GAMIFIED PROFILE */}
         <AnimatePresence>
-          {view !== 'chat' && (
+          {view === 'home' && (
             <motion.div 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex justify-between items-center mb-4 mt-2 shrink-0 px-6 pt-6"
+              className="flex justify-between items-end mb-2 mt-2 shrink-0 px-6 pt-6"
             >
-              <div>
-                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
-                  Nutri<span className="text-blue-600">Judge</span>
-                </h1>
-                <p className="text-xs text-slate-400 font-bold tracking-widest uppercase">Smart Food Scanner</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-indigo-600 rounded-xl border-b-4 border-indigo-900 flex items-center justify-center text-white shadow-lg">
+                  <span className="text-2xl">😎</span>
+                </div>
+                <div>
+                  <h1 className="text-sm font-black text-slate-400 uppercase tracking-wider">Player 1</h1>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-black text-slate-900 leading-none">Lvl {level}</span>
+                    <div className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">
+                      Healthy
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Next Lvl</div>
+                <div className="w-24 h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(xp/500)*100}%` }}
+                    className="h-full bg-yellow-400" 
+                  />
+                </div>
               </div>
             </motion.div>
           )}
@@ -167,59 +188,108 @@ const App = () => {
         <div className="flex-1 relative perspective-[1000px] min-h-0">
           <AnimatePresence mode="wait">
             
-            {/* VIEW: HOME */}
+            {/* --- VIEW: HOME (REVAMPED) --- */}
             {view === 'home' && (
               <motion.div 
                 key="home"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="flex flex-col gap-6 mt-4 px-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex flex-col h-full px-6 pb-6 pt-2"
               >
-                <button 
-                  onClick={() => setView('scan')}
-                  className="group relative h-48 rounded-[2rem] overflow-hidden bg-white shadow-xl shadow-blue-100 border border-blue-50 transition-all hover:scale-[1.02] active:scale-95"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition duration-500" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
-                    <div className="p-5 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-white group-hover:text-blue-600 transition-colors shadow-sm">
-                      <Camera size={40} strokeWidth={2} />
+                {/* BENTO GRID LAYOUT */}
+                <div className="grid grid-cols-2 gap-4 flex-1 content-start">
+                  
+                  {/* TILE 1: DAILY STATS */}
+                  <div className="col-span-1 bg-white border-2 border-slate-200 border-b-4 rounded-[1.5rem] p-4 flex flex-col justify-between h-32 active:scale-95 transition-transform">
+                    <div className="flex items-start justify-between">
+                      <Zap className="text-yellow-500 fill-yellow-500" size={24} />
+                      <span className="text-xs font-black text-slate-300">STREAK</span>
                     </div>
-                    <div className="text-center group-hover:text-white transition-colors">
-                      <span className="block text-2xl font-bold tracking-tight text-slate-900 group-hover:text-white">Scan Barcode</span>
-                      <span className="text-sm text-slate-400 font-medium group-hover:text-blue-100">Instant Nutritional Analysis</span>
+                    <div>
+                      <span className="text-3xl font-black text-slate-800 block">4</span>
+                      <span className="text-xs font-bold text-slate-400">Days clean eating</span>
                     </div>
                   </div>
-                </button>
 
-                <button 
-                  onClick={() => setView('chat')} 
-                  className="group relative h-48 rounded-[2rem] overflow-hidden bg-white shadow-xl shadow-slate-200 border border-slate-100 transition-all hover:scale-[1.02] active:scale-95"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 opacity-0 group-hover:opacity-100 transition duration-500" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
-                    <div className="p-5 bg-slate-50 text-slate-600 rounded-2xl group-hover:bg-white group-hover:text-slate-900 transition-colors shadow-sm">
-                      <MessageCircle size={40} strokeWidth={2} />
+                  {/* TILE 2: COLLECTION */}
+                  <div className="col-span-1 bg-white border-2 border-slate-200 border-b-4 rounded-[1.5rem] p-4 flex flex-col justify-between h-32 active:scale-95 transition-transform">
+                    <div className="flex items-start justify-between">
+                      <Trophy className="text-orange-500" size={24} />
+                      <span className="text-xs font-black text-slate-300">BADGES</span>
                     </div>
-                    <div className="text-center group-hover:text-white transition-colors">
-                      <span className="block text-2xl font-bold tracking-tight text-slate-900 group-hover:text-white">Chat / Upload</span>
-                      <span className="text-sm text-slate-400 font-medium group-hover:text-slate-300">Ask the AI Judge</span>
+                    <div>
+                      <span className="text-3xl font-black text-slate-800 block">12</span>
+                      <span className="text-xs font-bold text-slate-400">Unlocked</span>
                     </div>
                   </div>
-                </button>
+
+                  {/* TILE 3: MAIN ACTION (SCAN) */}
+                  <button 
+                    onClick={() => setView('scan')}
+                    className="col-span-2 relative group h-48 rounded-[2rem] overflow-hidden border-2 border-black border-b-[8px] bg-[#FFD028] active:border-b-2 active:translate-y-1 transition-all"
+                  >
+                    {/* Decorative Patterns */}
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black to-transparent" />
+                    <div className="absolute top-4 right-4 animate-pulse">
+                      <div className="w-3 h-3 bg-red-500 rounded-full border border-black" />
+                    </div>
+                    
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                      <motion.div 
+                        whileHover={{ rotate: 10, scale: 1.1 }}
+                        className="bg-white border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                      >
+                         <ScanLine size={48} strokeWidth={2.5} />
+                      </motion.div>
+                      <div className="text-center mt-2">
+                        <span className="block text-3xl font-black tracking-tighter text-black uppercase italic">Scan Loot</span>
+                        <span className="text-xs font-bold bg-black text-[#FFD028] px-2 py-1 rounded-md uppercase tracking-widest">Identify Food</span>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* TILE 4: CHAT */}
+                  <button 
+                    onClick={() => setView('chat')}
+                    className="col-span-2 h-24 bg-[#5865F2] rounded-[1.5rem] border-2 border-black border-b-[6px] flex items-center justify-between px-6 text-white active:border-b-2 active:translate-y-1 transition-all group"
+                  >
+                    <div className="flex flex-col items-start">
+                      <span className="font-black text-xl uppercase italic">Ask The Oracle</span>
+                      <span className="text-xs font-bold opacity-80 group-hover:underline">Chat with AI Nutritionist</span>
+                    </div>
+                    <MessageCircle size={32} strokeWidth={2.5} className="group-hover:rotate-12 transition-transform" />
+                  </button>
+
+                  {/* TILE 5: RECENT */}
+                  <div className="col-span-2 mt-2">
+                    <div className="flex justify-between items-center mb-2 px-2">
+                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Last Scanned</span>
+                      <ChevronRight size={16} className="text-slate-400" />
+                    </div>
+                    <div className="bg-white p-3 rounded-2xl border-2 border-slate-100 flex items-center gap-4">
+                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-xl border border-slate-200">🍎</div>
+                      <div>
+                        <div className="font-bold text-slate-800">Fuji Apple</div>
+                        <div className="text-xs text-green-500 font-black uppercase">Grade A • 52 kcal</div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </motion.div>
             )}
 
-            {/* VIEW: SCANNER */}
+            {/* VIEW: SCANNER (Keeping existing logic, tweaking style) */}
             {view === 'scan' && (
               <motion.div 
                 key="scan"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center h-full px-6"
+                className="flex flex-col items-center h-full px-6 pt-8"
               >
-                <div className="w-full aspect-square bg-black rounded-[2.5rem] overflow-hidden relative shadow-2xl shadow-slate-200 border-4 border-white ring-1 ring-slate-100">
+                <div className="w-full aspect-square bg-black rounded-[2.5rem] overflow-hidden relative shadow-2xl border-[6px] border-slate-800">
                   {!loading ? (
                     <BarcodeScannerComponent
                       width={500}
@@ -231,20 +301,20 @@ const App = () => {
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-white">
                       <Loader className="animate-spin" size={40} />
-                      <span className="font-bold text-sm tracking-widest">SCANNING...</span>
+                      <span className="font-black text-xl tracking-widest">DECODING...</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)] animate-[scan_2s_infinite_linear]" />
-                    <div className="absolute inset-0 border-[40px] border-black/40" />
+                  {/* Retro Scanner Overlay */}
+                  <div className="absolute inset-0 pointer-events-none border-[40px] border-black/50">
+                     <div className="absolute top-1/2 left-4 right-4 h-1 bg-red-500 shadow-[0_0_10px_red] animate-pulse" />
+                     <div className="absolute top-4 left-4 text-green-400 font-mono text-xs">REC ●</div>
                   </div>
                 </div>
-                <p className="mt-8 text-slate-500 text-sm font-bold text-center max-w-[200px]">Align barcode within the frame</p>
                 <button 
                   onClick={() => setView('home')} 
-                  className="mt-auto mb-8 px-8 py-4 bg-white border border-slate-200 rounded-full text-slate-600 font-bold hover:bg-slate-50 transition shadow-lg shadow-slate-100"
+                  className="mt-8 px-8 py-4 bg-white border-2 border-slate-200 border-b-4 rounded-2xl text-slate-900 font-black uppercase tracking-wider hover:bg-slate-50 active:border-b-2 active:translate-y-[2px]"
                 >
-                  Cancel Scan
+                  Abort Mission
                 </button>
               </motion.div>
             )}
@@ -253,150 +323,96 @@ const App = () => {
             {view === 'confirm' && productData && (
               <motion.div 
                 key="confirm"
-                initial={{ opacity: 0, scale: 0.8, rotateY: 90 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ type: "spring", damping: 20 }}
-                className="absolute inset-0 flex flex-col px-6 pb-6"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute inset-0 flex flex-col px-6 pb-6 pt-10"
               >
-                <div className="bg-white p-2 rounded-[2rem] border border-slate-200 shadow-2xl shadow-blue-100 relative overflow-hidden flex-1 flex flex-col">
-                  <div className="bg-slate-50 p-4 rounded-[1.5rem] h-full relative z-10 border border-slate-100 flex flex-col">
-                    <h2 className="text-xl font-black text-slate-800 uppercase truncate mb-4">{productData.product_name}</h2>
-                    <div className="bg-white p-4 rounded-2xl shadow-inner border border-slate-100 mb-4 relative group flex-1">
-                      <div className="flex items-center justify-center overflow-hidden h-full">
-                         <img src={productData.image_url} alt="Product" className="w-full h-full object-contain relative z-10" />
-                      </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm shrink-0">
-                      <div className="font-bold text-slate-400 mb-1 block uppercase text-[10px] tracking-widest">Brand</div>
-                      <p className="text-slate-800 font-bold text-lg">{productData.brands || 'Unknown'}</p>
-                    </div>
+                {/* Product Card */}
+                <div className="bg-white p-4 rounded-[2rem] border-2 border-black border-b-8 flex-1 flex flex-col items-center text-center">
+                  <div className="w-full h-48 bg-slate-50 rounded-2xl mb-4 flex items-center justify-center p-4 border border-slate-100">
+                     <img src={productData.image_url} alt="Product" className="max-h-full object-contain" />
                   </div>
+                  <h2 className="text-2xl font-black text-slate-900 uppercase leading-none mb-2">{productData.product_name}</h2>
+                  <p className="font-bold text-slate-400 uppercase text-xs tracking-widest">{productData.brands}</p>
                 </div>
+                
                 <div className="flex gap-4 mt-4 shrink-0">
-                  <button onClick={() => setView('scan')} className="flex-1 py-4 bg-white border-b-4 border-slate-200 text-slate-600 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-wider transition-all active:border-b-0 active:translate-y-[4px] shadow-lg">Cancel</button>
-                  <button onClick={analyzeWithLLM} className="flex-1 py-4 bg-blue-600 border-b-4 border-blue-800 text-white rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-wider transition-all active:border-b-0 active:translate-y-[4px] shadow-lg">Judge It</button>
+                  <button onClick={() => setView('scan')} className="flex-1 py-4 bg-slate-100 border-2 border-slate-300 border-b-4 text-slate-500 rounded-2xl font-black uppercase active:border-b-2 active:translate-y-1">Retry</button>
+                  <button onClick={analyzeWithLLM} className="flex-1 py-4 bg-green-500 border-2 border-black border-b-4 text-white rounded-2xl font-black uppercase shadow-lg active:border-b-2 active:translate-y-1">Identify</button>
                 </div>
               </motion.div>
             )}
 
-            {/* VIEW: ANALYZING */}
+            {/* VIEW: ANALYZING (Gamified Loading) */}
             {view === 'analyzing' && (
               <motion.div 
                 key="analyzing"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full px-6"
+                className="flex flex-col items-center justify-center h-full px-6 text-center"
               >
-                <div className="text-8xl animate-bounce mb-8">⚖️</div>
-                <h2 className="text-3xl font-black text-slate-900 mb-2 text-center">The Council<br/>is Deciding</h2>
+                <div className="text-6xl animate-bounce mb-6">🎲</div>
+                <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase italic">Rolling Stats...</h2>
+                <p className="font-mono text-sm text-slate-500">Calculating health damage...</p>
               </motion.div>
             )}
 
-            {/* VIEW: RESULT CARD */}
+            {/* VIEW: RESULT CARD (Keeping logic, updating frame) */}
             {view === 'result_card' && productData && analysis && (
               <motion.div 
                 key="result_card"
-                initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ type: "spring", damping: 20 }}
-                className="absolute inset-0 flex flex-col"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute inset-0 flex flex-col bg-[#F2F3F5]"
               >
-                <div className="flex-1 overflow-y-auto no-scrollbar pb-32 px-6">
-                  
-                  {/* Card */}
-                  <div className={`bg-white p-[6px] rounded-[2rem] border-[4px] shadow-2xl relative mt-2 mb-6 ${
-                    ['F','D'].includes(analysis.grade) ? 'border-red-500 shadow-red-100' : 
-                    ['C'].includes(analysis.grade) ? 'border-yellow-400 shadow-yellow-100' :
-                    'border-green-500 shadow-green-100'
-                  }`}>
-                    <div className="bg-slate-50 p-5 rounded-[1.5rem] relative z-10 flex flex-col border border-slate-100">
-                      <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-xl font-black text-slate-800 uppercase truncate pr-2 leading-tight flex-1">{productData.product_name}</h2>
-                        <div className="flex flex-col items-end">
-                          <span className={`text-4xl font-black leading-none ${['F','D'].includes(analysis.grade) ? 'text-red-500' : ['C'].includes(analysis.grade) ? 'text-yellow-500' : 'text-green-500'}`}>{analysis.grade}</span>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grade</span>
-                        </div>
-                      </div>
-                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
-                        <div className="flex items-center justify-center overflow-hidden h-40">
-                          <img src={productData.image_url} alt="Product" className="w-full h-full object-contain relative z-10" />
-                        </div>
-                      </div>
-                      <div className="mb-6">
-                        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2">The Verdict</h3>
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium">{analysis.reasoning}</p>
-                      </div>
-                      {analysis.health_risks && analysis.health_risks.length > 0 && (
-                        <div>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-red-400 mb-2 flex items-center gap-1"><AlertTriangle size={12} /> Health Risks</h3>
-                          <div className="space-y-2">
-                            {analysis.health_risks.map((risk, i) => (
-                              <div key={i} className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                <span className="text-xs text-slate-600 font-bold">{risk}</span>
-                                <span className="text-[10px] font-black text-red-400 bg-red-50 px-2 py-1 rounded-full">-10 HP</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div className="flex-1 overflow-y-auto pb-32 px-4 pt-4">
+                   {/* SCORE CARD */}
+                   <div className={`
+                     p-6 rounded-[2rem] border-2 border-black border-b-8 mb-6 relative overflow-hidden
+                     ${['F','D'].includes(analysis.grade) ? 'bg-red-500 text-white' : 
+                       ['C'].includes(analysis.grade) ? 'bg-yellow-400 text-black' :
+                       'bg-green-500 text-white'}
+                   `}>
+                     <div className="flex justify-between items-start relative z-10">
+                       <div className="flex-1">
+                         <div className="font-black text-xs uppercase opacity-70 mb-1 tracking-widest">ITEM GRADE</div>
+                         <div className="text-7xl font-black leading-none">{analysis.grade}</div>
+                       </div>
+                       <div className="bg-black/10 p-2 rounded-xl backdrop-blur-sm">
+                         <img src={productData.image_url} className="w-16 h-16 object-contain" />
+                       </div>
+                     </div>
+                     <p className="mt-4 font-bold text-lg leading-tight opacity-90">"{analysis.reasoning}"</p>
+                   </div>
 
-                  {/* Topic Selection Grid - Fixed Colors */}
-                  <div className="mb-24">
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-4 px-2">Deep Dive Analysis</h3>
-                    <div className="grid grid-cols-2 gap-3 px-1">
+                   {/* Stats Grid */}
+                   <div className="grid grid-cols-2 gap-3">
                       {[
-                        { id: 'nutrition', label: 'Nutrition', icon: '📊' },
-                        { id: 'health', label: 'Health Risks', icon: '⚠️' },
-                        { id: 'ingredients', label: 'Ingredients', icon: '🌿' },
-                        { id: 'alternatives', label: 'Alternatives', icon: '🥗' }
-                      ].map((topic) => {
-                        const points = getTopicPreview(topic.id);
-                        const conf = topicConfig[topic.id]; // Access safe classes
-
-                        return (
-                          <button
+                        { id: 'nutrition', label: 'Stats', icon: '📊' },
+                        { id: 'health', label: 'Debuffs', icon: '💀' },
+                        { id: 'ingredients', label: 'Crafting', icon: '🧪' },
+                        { id: 'alternatives', label: 'Loot', icon: '💎' }
+                      ].map((topic) => (
+                        <button
                             key={topic.id}
                             onClick={() => { setSelectedTopic(topic.id); setView('chat'); }}
-                            className={`
-                              relative p-4 rounded-[1.5rem] border text-left transition-all duration-200
-                              flex flex-col h-full bg-white border-slate-100 shadow-sm
-                              active:scale-[0.98] ${conf.active}
-                            `}
-                          >
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-lg">{topic.icon}</span>
-                              <span className="font-black text-slate-800 text-sm tracking-tight">{topic.label}</span>
-                            </div>
-                            <div className="space-y-2 mb-4 flex-1">
-                              {points.map((point, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${conf.dot} shrink-0`} />
-                                  <span className="text-xs text-slate-500 font-medium leading-tight truncate">{point}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className={`mt-auto w-full py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-center ${conf.pill}`}>
-                              Read More
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                            className="bg-white p-4 rounded-2xl border-2 border-slate-200 border-b-4 text-left active:scale-95 transition-transform"
+                        >
+                          <div className="text-2xl mb-2">{topic.icon}</div>
+                          <div className="font-black text-slate-900 uppercase text-sm">{topic.label}</div>
+                          <div className="text-xs text-slate-400 font-bold mt-1">Click to view</div>
+                        </button>
+                      ))}
+                   </div>
                 </div>
 
                 {/* Floating Chat Button */}
-                <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent z-20 max-w-md mx-auto">
+                <div className="fixed bottom-6 left-6 right-6">
                   <button 
                     onClick={() => setView('chat')} 
-                    className="w-full py-4 bg-slate-900 border-b-[6px] border-black text-white rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-wider transition-all active:border-b-0 active:translate-y-[6px] shadow-xl hover:bg-slate-800"
+                    className="w-full py-4 bg-indigo-600 border-2 border-black border-b-4 text-white rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-wider shadow-xl active:border-b-2 active:translate-y-1"
                   >
-                    <MessageCircle size={24} strokeWidth={3} /> Chat More
+                    <MessageCircle size={24} strokeWidth={3} /> Open Comms
                   </button>
                 </div>
               </motion.div>
@@ -410,7 +426,7 @@ const App = () => {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="absolute inset-0 flex flex-col h-full overflow-hidden bg-slate-50"
+                className="absolute inset-0 bg-white z-50"
               > 
                 <ChatInterface 
                   productData={productData} 
