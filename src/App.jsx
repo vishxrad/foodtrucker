@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 import axios from 'axios';
 import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, ChevronRight, ScanLine, Loader } from 'lucide-react';
@@ -17,6 +17,12 @@ const App = () => {
   // Gamification States
   const [xp, setXp] = useState(340);
   const [level, setLevel] = useState(3);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 4500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleVibration = (grade) => {
     const badGrades = ['C', 'D', 'F'];
@@ -159,6 +165,70 @@ const App = () => {
     <div className="h-[100dvh] bg-[#F2F3F5] text-slate-900 font-sans overflow-hidden relative">
       <BgPattern />
       
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-[100] bg-[#F2F3F5] flex flex-col items-center justify-center overflow-hidden"
+          >
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-5 pointer-events-none" 
+                style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
+            />
+            
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "backOut" }}
+              className="relative z-10 flex flex-col items-center"
+            >
+              {/* Logo / Icon Placeholder */}
+              <div className="mb-8 relative">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                  className="absolute -inset-4 border-2 border-dashed border-slate-300 rounded-full"
+                />
+                <div className="w-24 h-24 bg-[#5865F2] rounded-2xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center transform -rotate-6">
+                   <span className="text-5xl">🍎</span>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h1 className="text-6xl font-black uppercase italic tracking-tighter text-slate-900 mb-2 relative drop-shadow-sm">
+                Gut Feeling
+                <span className="absolute -top-4 -right-8 text-xs bg-[#FFD028] px-2 py-1 border-2 border-black rounded-lg font-black not-italic tracking-normal rotate-12 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  v1.0
+                </span>
+              </h1>
+              
+              {/* Loading Bar */}
+              <div className="w-64 h-6 bg-white border-2 border-black rounded-full p-1 mt-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+                <motion.div 
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 4, ease: "easeInOut" }}
+                  className="h-full bg-[#00E054] rounded-full border border-black/10 relative overflow-hidden"
+                >
+                   <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.5)_50%,transparent_75%)] bg-[length:20px_20px] animate-[shimmer_1s_infinite_linear]" />
+                </motion.div>
+              </div>
+              
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-3 font-mono text-xs font-bold text-slate-400 uppercase tracking-widest"
+              >
+                Calibrating Sensors...
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="relative z-10 max-w-md mx-auto h-full flex flex-col">
         
         {/* HEADER: GAMIFIED PROFILE */}
@@ -175,7 +245,7 @@ const App = () => {
                   <span className="text-2xl">😎</span>
                 </div>
                 <div>
-                  <h1 className="text-sm font-black text-slate-400 uppercase tracking-wider">Player 1</h1>
+                  <h1 className="text-sm font-black text-slate-400 uppercase tracking-wider">Visharad</h1>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-black text-slate-900 leading-none">Lvl {level}</span>
                     <div className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">
@@ -269,7 +339,7 @@ const App = () => {
                     className="col-span-2 h-24 bg-[#5865F2] rounded-[1.5rem] border-2 border-black border-b-[6px] flex items-center justify-between px-6 text-white active:border-b-2 active:translate-y-1 transition-all group"
                   >
                     <div className="flex flex-col items-start">
-                      <span className="font-black text-xl uppercase italic">Ask The Oracle</span>
+                      <span className="font-black text-xl uppercase italic">Ask Gut Feeling</span>
                       <span className="text-xs font-bold opacity-80 group-hover:underline">Chat with AI Nutritionist</span>
                     </div>
                     <MessageCircle size={32} strokeWidth={2.5} className="group-hover:rotate-12 transition-transform" />
@@ -419,7 +489,7 @@ const App = () => {
                   {/* 3. VERDICT REASONING (REVERTED TO STACKED) */}
                   <div className="mb-8 px-2">
                     <div className="inline-block bg-black text-white text-[10px] font-bold px-2 py-1 rounded mb-1 uppercase tracking-widest">
-                      Oracle Verdict
+                      Gut Feeling Verdict
                     </div>
                     <p className="text-lg font-bold text-slate-800 leading-tight">
                       {analysis.reasoning}

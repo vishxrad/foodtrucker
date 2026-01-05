@@ -231,7 +231,7 @@ const ChatInterface = ({ productData, analysis, onReset, initialTopic }) => {
       // 5. THE FIX: Shorter Home Greeting
       setMessages([{
           role: 'assistant',
-          content: "Oracle Online. Scan target to begin."
+          content: "Gut Feeling Online. Scan target to begin."
       }]);
     }
   }, [productData, analysis, initialTopic]);
@@ -315,7 +315,7 @@ const ChatInterface = ({ productData, analysis, onReset, initialTopic }) => {
           </button>
           <div className="flex flex-col">
             <span className="font-black text-white text-xl uppercase italic tracking-tighter flex items-center gap-2">
-              Oracle <span className="bg-black text-[#FFD028] text-[10px] px-1 py-0.5 rounded not-italic tracking-normal">BOT</span>
+              Gut Feeling <span className="bg-black text-[#FFD028] text-[10px] px-1 py-0.5 rounded not-italic tracking-normal">BOT</span>
             </span>
             <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest mt-0.5">
               Online • Lvl 99
