@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# API Client (removed from ignore as we will secure it)
+# src/openaiClient.js
