@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 import axios from 'axios';
-import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, ChevronRight, ScanLine, Loader } from 'lucide-react';
+import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, ChevronRight, ScanLine, Loader, Shield, Scroll, Activity, RefreshCw, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatInterface from './chatInterface';
 import { openai } from './openaiClient';
@@ -14,10 +14,22 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
   
-  // Gamification States
+  // Gamification & Interaction States
   const [xp, setXp] = useState(340);
   const [level, setLevel] = useState(3);
   const [showSplash, setShowSplash] = useState(true);
+  
+  // -- INTERACTIVE STATES --
+  const [shieldIntegrity, setShieldIntegrity] = useState(84); 
+  const [sysStatus, setSysStatus] = useState("System Good");
+  const [lootCount, setLootCount] = useState(12); 
+
+  // -- DUMMY RECENTS DATA --
+  const recentScans = [
+    { id: 1, name: "Maggi Noodles", grade: "F", time: "2m ago", img: "🍜" },
+    { id: 2, name: "Diet Coke", grade: "C", time: "1h ago", img: "🥤" },
+    { id: 3, name: "Rolled Oats", grade: "S", time: "4h ago", img: "🌾" },
+  ];
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 4500);
@@ -29,6 +41,32 @@ const App = () => {
     if (badGrades.includes(grade) && navigator.vibrate) {
       navigator.vibrate([500, 200, 500]);
     }
+  };
+
+  // --- INTERACTION HANDLERS ---
+  const handleShieldClick = () => {
+    if (shieldIntegrity < 100) {
+      setShieldIntegrity(100);
+      if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+    }
+  };
+
+  const handleSysClick = () => {
+    if (sysStatus === "Optimizing...") return;
+    setSysStatus("Optimizing...");
+    if (navigator.vibrate) navigator.vibrate(50);
+    setTimeout(() => {
+      setSysStatus("System Good");
+      if (navigator.vibrate) navigator.vibrate([50, 50]);
+    }, 1500);
+  };
+
+  const handleLootClick = () => {
+    setLootCount("...");
+    if (navigator.vibrate) navigator.vibrate(20);
+    setTimeout(() => {
+      setLootCount(prev => (prev === "..." ? 13 : prev + 1));
+    }, 800);
   };
 
   // --- HELPER: Generate Subpoints for the Grid ---
@@ -173,7 +211,6 @@ const App = () => {
             transition={{ duration: 0.5 }}
             className="fixed inset-0 z-[100] bg-[#F2F3F5] flex flex-col items-center justify-center overflow-hidden"
           >
-            {/* Background Pattern */}
             <div className="absolute inset-0 opacity-5 pointer-events-none" 
                 style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
             />
@@ -184,7 +221,6 @@ const App = () => {
               transition={{ duration: 0.5, ease: "backOut" }}
               className="relative z-10 flex flex-col items-center"
             >
-              {/* Logo / Icon Placeholder */}
               <div className="mb-8 relative">
                 <motion.div 
                   animate={{ rotate: 360 }}
@@ -196,7 +232,6 @@ const App = () => {
                 </div>
               </div>
 
-              {/* Title */}
               <h1 className="text-6xl font-black uppercase italic tracking-tighter text-slate-900 mb-2 relative drop-shadow-sm">
                 Gut Feeling
                 <span className="absolute -top-4 -right-8 text-xs bg-[#FFD028] px-2 py-1 border-2 border-black rounded-lg font-black not-italic tracking-normal rotate-12 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -204,7 +239,6 @@ const App = () => {
                 </span>
               </h1>
               
-              {/* Loading Bar */}
               <div className="w-64 h-6 bg-white border-2 border-black rounded-full p-1 mt-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
                 <motion.div 
                   initial={{ width: "0%" }}
@@ -231,38 +265,40 @@ const App = () => {
 
       <div className="relative z-10 max-w-md mx-auto h-full flex flex-col">
         
-        {/* HEADER: GAMIFIED PROFILE */}
+        {/* HEADER: PLAYER HUD */}
         <AnimatePresence>
           {view === 'home' && (
             <motion.div 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex justify-between items-end mb-2 mt-2 shrink-0 px-6 pt-6"
+              className="flex justify-between items-center mb-2 mt-2 shrink-0 px-6 pt-6"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-indigo-600 rounded-xl border-b-4 border-indigo-900 flex items-center justify-center text-white shadow-lg">
-                  <span className="text-2xl">😎</span>
-                </div>
-                <div>
-                  <h1 className="text-sm font-black text-slate-400 uppercase tracking-wider">Visharad</h1>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black text-slate-900 leading-none">Lvl {level}</span>
-                    <div className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">
-                      Healthy
-                    </div>
-                  </div>
-                </div>
+              {/* Profile Pill */}
+              <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
+                 <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-sm border border-black">
+                   😎
+                 </div>
+                 <div className="flex flex-col">
+                   <span className="text-[10px] font-black uppercase text-slate-400 leading-none">Player 1</span>
+                   <span className="text-sm font-black text-slate-900 leading-none">LVL {level}</span>
+                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Next Lvl</div>
-                <div className="w-24 h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(xp/500)*100}%` }}
-                    className="h-full bg-yellow-400" 
-                  />
+
+              {/* XP Bar Segmented */}
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ scaleY: 0 }}
+                      animate={{ scaleY: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className={`w-3 h-4 border border-black transform skew-x-12 ${i < 3 ? 'bg-[#00E054]' : 'bg-slate-200'}`} 
+                    />
+                  ))}
                 </div>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">XP Progress</span>
               </div>
             </motion.div>
           )}
@@ -272,7 +308,7 @@ const App = () => {
         <div className="flex-1 relative perspective-[1000px] min-h-0">
           <AnimatePresence mode="wait">
             
-            {/* --- VIEW: HOME (REVAMPED) --- */}
+            {/* --- VIEW: HOME (INTERACTIVE) --- */}
             {view === 'home' && (
               <motion.div 
                 key="home"
@@ -284,81 +320,160 @@ const App = () => {
                 {/* BENTO GRID LAYOUT */}
                 <div className="grid grid-cols-2 gap-4 flex-1 content-start">
                   
-                  {/* TILE 1: DAILY STATS */}
-                  <div className="col-span-1 bg-white border-2 border-slate-200 border-b-4 rounded-[1.5rem] p-4 flex flex-col justify-between h-32 active:scale-95 transition-transform">
-                    <div className="flex items-start justify-between">
-                      <Zap className="text-yellow-500 fill-yellow-500" size={24} />
-                      <span className="text-xs font-black text-slate-300">STREAK</span>
+                  {/* TILE 1: SYSTEM STATUS (Click to Optimize) */}
+                  {/* <button 
+                    onClick={handleSysClick}
+                    className="col-span-2 bg-white border-2 border-black border-b-[6px] rounded-[1.5rem] p-4 flex items-center justify-between shadow-sm active:border-b-2 active:translate-y-1 transition-all group"
+                  >
+                     <div className="flex items-center gap-3">
+                        <div className={`
+                          p-3 rounded-xl border-2 border-black transition-colors duration-300
+                          ${sysStatus === "Optimizing..." ? 'bg-yellow-100 text-yellow-600 animate-spin' : 'bg-green-100 text-green-600'}
+                        `}>
+                          <Activity size={24} strokeWidth={2.5} />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-black text-slate-900 uppercase text-lg leading-none transition-all">
+                            {sysStatus}
+                          </h3>
+                          <span className="text-xs font-bold text-slate-400">
+                             {sysStatus === "Optimizing..." ? "Running diagnostics..." : "Streak Active: 4 Days"}
+                          </span>
+                        </div>
+                     </div>
+                     <div className="flex gap-1 items-end h-8">
+                        <motion.div animate={{ height: [10, 24, 10] }} transition={{ repeat: Infinity, duration: 1.2 }} className="w-2 bg-green-400 rounded-sm border border-black" />
+                        <motion.div animate={{ height: [15, 30, 15] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} className="w-2 bg-green-400 rounded-sm border border-black" />
+                        <motion.div animate={{ height: [8, 20, 8] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }} className="w-2 bg-green-400 rounded-sm border border-black" />
+                     </div>
+                  </button> */}
+
+                  {/* TILE 2: GUT SHIELD (Replaces Quest) */}
+                  <button 
+                    onClick={handleShieldClick}
+                    className="col-span-1 bg-[#3B82F6] border-2 border-black border-b-[6px] rounded-[1.5rem] p-4 flex flex-col justify-between h-40 text-white relative overflow-hidden group active:border-b-2 active:translate-y-1 transition-all text-left"
+                  >
+                     <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-110 transition-transform">
+                        <Shield size={48} />
+                     </div>
+                     <div className="relative z-10">
+                        <span className="text-[10px] font-black uppercase bg-black/20 px-2 py-1 rounded">Defense</span>
+                        <h3 className="font-black text-xl mt-2 leading-tight">
+                           Gut Shield
+                        </h3>
+                     </div>
+                     <div className="relative z-10 w-full mt-auto">
+                        <div className="flex justify-between text-xs font-bold mb-1 opacity-90">
+                           <span>Integrity</span>
+                           <span>{shieldIntegrity}%</span>
+                        </div>
+                        <div className="h-3 bg-black/20 rounded-full overflow-hidden border border-black/10">
+                           <motion.div 
+                             initial={{ width: `${shieldIntegrity}%` }}
+                             animate={{ width: `${shieldIntegrity}%` }}
+                             className={`h-full ${shieldIntegrity < 50 ? 'bg-red-400' : 'bg-cyan-300'}`} 
+                           />
+                        </div>
+                        {shieldIntegrity < 100 && <span className="text-[8px] font-black uppercase tracking-widest mt-1 block opacity-80">Click to Recharge</span>}
+                     </div>
+                  </button>
+
+                  {/* TILE 3: LOOT COUNTER (Click to Sync) */}
+                  <button 
+                    onClick={handleLootClick}
+                    className="col-span-1 bg-white border-2 border-black border-b-[6px] rounded-[1.5rem] p-4 flex flex-col justify-between h-40 group active:border-b-2 active:translate-y-1 transition-all cursor-pointer text-left"
+                  >
+                    <div className="flex justify-between items-start w-full">
+                       <div className="p-2 bg-orange-100 text-orange-600 rounded-lg border-2 border-orange-200 group-hover:rotate-12 transition-transform">
+                          {lootCount === "..." ? <RefreshCw size={20} className="animate-spin"/> : <Scroll size={20} />}
+                       </div>
+                       <ChevronRight size={20} className="text-slate-300" />
                     </div>
                     <div>
-                      <span className="text-3xl font-black text-slate-800 block">4</span>
-                      <span className="text-xs font-bold text-slate-400">Days clean eating</span>
+                      <div className="text-3xl font-black text-slate-900">{lootCount}</div>
+                      <div className="text-xs font-bold text-slate-400 uppercase leading-tight">Total Items<br/>Scanned</div>
                     </div>
-                  </div>
+                  </button>
 
-                  {/* TILE 2: COLLECTION */}
-                  <div className="col-span-1 bg-white border-2 border-slate-200 border-b-4 rounded-[1.5rem] p-4 flex flex-col justify-between h-32 active:scale-95 transition-transform">
-                    <div className="flex items-start justify-between">
-                      <Trophy className="text-orange-500" size={24} />
-                      <span className="text-xs font-black text-slate-300">BADGES</span>
-                    </div>
-                    <div>
-                      <span className="text-3xl font-black text-slate-800 block">12</span>
-                      <span className="text-xs font-bold text-slate-400">Unlocked</span>
-                    </div>
-                  </div>
-
-                  {/* TILE 3: MAIN ACTION (SCAN) */}
+                  {/* TILE 4: SCANNER (Main Hero) */}
                   <button 
                     onClick={() => setView('scan')}
-                    className="col-span-2 relative group h-48 rounded-[2rem] overflow-hidden border-2 border-black border-b-[8px] bg-[#FFD028] active:border-b-2 active:translate-y-1 transition-all"
+                    className="col-span-2 h-32 rounded-[2rem] bg-[#FFD028] border-2 border-black border-b-[8px] relative overflow-hidden group active:border-b-2 active:translate-y-1.5 transition-all"
                   >
-                    {/* Decorative Patterns */}
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black to-transparent" />
-                    <div className="absolute top-4 right-4 animate-pulse">
-                      <div className="w-3 h-3 bg-red-500 rounded-full border border-black" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                       <motion.div 
+                         animate={{ scale: [1, 2], opacity: [1, 0] }}
+                         transition={{ repeat: Infinity, duration: 2 }}
+                         className="w-full h-full rounded-full border-[20px] border-white"
+                       />
                     </div>
                     
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                      <motion.div 
-                        whileHover={{ rotate: 10, scale: 1.1 }}
-                        className="bg-white border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                      >
-                         <ScanLine size={48} strokeWidth={2.5} />
-                      </motion.div>
-                      <div className="text-center mt-2">
-                        <span className="block text-3xl font-black tracking-tighter text-black uppercase italic">Scan Loot</span>
-                        <span className="text-xs font-bold bg-black text-[#FFD028] px-2 py-1 rounded-md uppercase tracking-widest">Identify Food</span>
-                      </div>
+                    <div className="absolute inset-0 flex items-center justify-between px-8">
+                       <div className="flex flex-col text-left">
+                          <span className="text-4xl font-black text-black uppercase italic tracking-tighter">Scan Loot</span>
+                          <span className="text-xs font-black text-black/60 uppercase tracking-widest bg-white/30 inline-block px-2 py-0.5 rounded w-fit">Identify Target</span>
+                       </div>
+                       <div className="w-16 h-16 bg-white border-2 border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-6 transition-transform">
+                          <ScanLine size={32} strokeWidth={3} />
+                       </div>
                     </div>
                   </button>
 
-                  {/* TILE 4: CHAT */}
+
                   <button 
                     onClick={() => setView('chat')}
-                    className="col-span-2 h-24 bg-[#5865F2] rounded-[1.5rem] border-2 border-black border-b-[6px] flex items-center justify-between px-6 text-white active:border-b-2 active:translate-y-1 transition-all group"
+                    className="col-span-2 h-20 bg-white rounded-[1.5rem] border-2 border-black border-b-[6px] flex items-center justify-between px-6 active:border-b-2 active:translate-y-1 transition-all group"
                   >
-                    <div className="flex flex-col items-start">
-                      <span className="font-black text-xl uppercase italic">Ask Gut Feeling</span>
-                      <span className="text-xs font-bold opacity-80 group-hover:underline">Chat with AI Nutritionist</span>
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center border-2 border-black group-hover:bg-indigo-100 transition-colors">
+                          <MessageCircle size={20} />
+                       </div>
+                       <div className="flex flex-col items-start">
+                         <span className="font-black text-lg uppercase text-slate-900">Consult AI</span>
+                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nutritionist Link</span>
+                       </div>
                     </div>
-                    <MessageCircle size={32} strokeWidth={2.5} className="group-hover:rotate-12 transition-transform" />
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   </button>
-
-                  {/* TILE 5: RECENT */}
-                  <div className="col-span-2 mt-2">
-                    <div className="flex justify-between items-center mb-2 px-2">
-                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Last Scanned</span>
-                      <ChevronRight size={16} className="text-slate-400" />
+                  
+                  {/* --- NEW SECTION: RECENT DROPS --- */}
+                  <div className="col-span-2">
+                    <div className="flex items-center justify-between mb-2 mt-2 px-1">
+                      <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Recent Drops</h3>
+                      <button className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">View All</button>
                     </div>
-                    <div className="bg-white p-3 rounded-2xl border-2 border-slate-100 flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-xl border border-slate-200">🍎</div>
-                      <div>
-                        <div className="font-bold text-slate-800">Fuji Apple</div>
-                        <div className="text-xs text-green-500 font-black uppercase">Grade A • 52 kcal</div>
-                      </div>
+                    
+                    <div className="space-y-2">
+                      {recentScans.map((item) => (
+                        <div key={item.id} className="bg-white border-2 border-black border-b-4 rounded-xl p-3 flex items-center justify-between active:scale-[0.98] transition-transform">
+                           <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-slate-100 rounded-lg border border-black flex items-center justify-center text-xl shadow-sm">
+                                {item.img}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-black text-slate-900 text-sm">{item.name}</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                                  <Clock size={10} /> {item.time}
+                                </span>
+                              </div>
+                           </div>
+                           
+                           {/* Grade Badge */}
+                           <div className={`
+                             w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                             ${item.grade === 'S' ? 'bg-green-500 text-white' : 
+                               item.grade === 'C' ? 'bg-yellow-400 text-black' : 
+                               'bg-red-500 text-white'}
+                           `}>
+                             {item.grade}
+                           </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+
+                  {/* TILE 5: CHAT (Wide Bottom) */}
+                  
 
                 </div>
               </motion.div>
@@ -388,7 +503,6 @@ const App = () => {
                       <span className="font-black text-xl tracking-widest">DECODING...</span>
                     </div>
                   )}
-                  {/* Retro Scanner Overlay */}
                   <div className="absolute inset-0 pointer-events-none border-[40px] border-black/50">
                      <div className="absolute top-1/2 left-4 right-4 h-1 bg-red-500 shadow-[0_0_10px_red] animate-pulse" />
                      <div className="absolute top-4 left-4 text-green-400 font-mono text-xs">REC ●</div>
@@ -411,7 +525,6 @@ const App = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="absolute inset-0 flex flex-col px-6 pb-6 pt-10"
               >
-                {/* Product Card */}
                 <div className="bg-white p-4 rounded-[2rem] border-2 border-black border-b-8 flex-1 flex flex-col items-center text-center">
                   <div className="w-full h-48 bg-slate-50 rounded-2xl mb-4 flex items-center justify-center p-4 border border-slate-100">
                      <img src={productData.image_url} alt="Product" className="max-h-full object-contain" />
@@ -441,7 +554,7 @@ const App = () => {
               </motion.div>
             )}
 
-            {/* VIEW: RESULT CARD (Refined & Moved) */}
+            {/* VIEW: RESULT CARD */}
             {view === 'result_card' && productData && analysis && (
               <motion.div 
                 key="result_card"
@@ -450,15 +563,11 @@ const App = () => {
                 className="absolute inset-0 flex flex-col bg-[#F2F3F5] overflow-y-auto no-scrollbar"
               >
                 <div className="px-6 pt-8 pb-32">
-                  
-                  {/* 1. PRODUCT NAME */}
                   <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-4 break-words">
                     {productData.product_name}
                   </h1>
 
-                  {/* 2. BIG IMAGE & GRADE (MOVED) */}
                   <div className="relative mb-6 mt-8">
-                    {/* The Image Card with Colored Border */}
                     <div className={`
                       bg-white rounded-[2rem] border-4 border-b-[8px] p-6 shadow-xl relative z-10 overflow-hidden
                       ${['F','D'].includes(analysis.grade) ? 'border-red-500' : 
@@ -475,7 +584,6 @@ const App = () => {
                        </div>
                     </div>
 
-                    {/* The Grade Badge (Floating TOP RIGHT) */}
                     <div className={`
                       absolute -top-6 -right-4 z-20 w-20 h-20 rounded-2xl border-4 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] flex items-center justify-center
                       ${['F','D'].includes(analysis.grade) ? 'bg-red-500 text-white' : 
@@ -486,7 +594,6 @@ const App = () => {
                     </div>
                   </div>
 
-                  {/* 3. VERDICT REASONING (REVERTED TO STACKED) */}
                   <div className="mb-8 px-2">
                     <div className="inline-block bg-black text-white text-[10px] font-bold px-2 py-1 rounded mb-1 uppercase tracking-widest">
                       Gut Feeling Verdict
@@ -496,7 +603,6 @@ const App = () => {
                     </p>
                   </div>
 
-                  {/* 4. TOPICS GRID (FIXED: INLINE EMOJI + LABEL) */}
                   <h3 className="font-black text-xs uppercase text-slate-400 tracking-widest mb-3 px-1">
                     Analysis Data
                   </h3>
@@ -516,7 +622,6 @@ const App = () => {
                           onClick={() => { setSelectedTopic(topic.id); setView('chat'); }}
                           className="relative p-4 rounded-2xl border-2 border-black border-b-[6px] text-left transition-all active:border-b-2 active:translate-y-1 bg-white"
                         >
-                          {/* UPDATED: Flex container to put Icon and Label on same line */}
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-2xl">{topic.icon}</span>
                             <span className="font-black text-slate-900 uppercase text-xs tracking-wide">{topic.label}</span>
@@ -543,7 +648,6 @@ const App = () => {
 
                 </div>
 
-                {/* Floating Chat Button */}
                 <div className="fixed bottom-6 left-6 right-6 z-30">
                   <button 
                     onClick={() => setView('chat')} 
