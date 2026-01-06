@@ -28,7 +28,7 @@ const App = () => {
   const recentScans = [
     { id: 1, name: "Maggi Noodles", grade: "F", time: "2m ago", img: "🍜" },
     { id: 2, name: "Diet Coke", grade: "C", time: "1h ago", img: "🥤" },
-    { id: 3, name: "Rolled Oats", grade: "S", time: "4h ago", img: "🌾" },
+    { id: 3, name: "Rice Crackers", grade: "S", time: "4h ago", img: "🌾" },
   ];
 
   useEffect(() => {
