@@ -280,7 +280,7 @@ const App = () => {
                    😎
                  </div>
                  <div className="flex flex-col">
-                   <span className="text-[10px] font-black uppercase text-slate-400 leading-none">Player 1</span>
+                   <span className="text-[10px] font-black uppercase text-slate-400 leading-none">Athanth</span>
                    <span className="text-sm font-black text-slate-900 leading-none">LVL {level}</span>
                  </div>
               </div>
