@@ -71,41 +71,31 @@ const App = () => {
 
   // --- HELPER: Generate Subpoints for the Grid ---
   const getTopicDetails = (topicId) => {
-    if (!productData || !analysis) return { points: ["Loading...", "Loading..."] };
-    const n = productData.nutriments;
-
+    if (!productData || !analysis) return { points: ["Loading...", "Loading...", "Loading..."] };
+    
     switch (topicId) {
       case 'nutrition':
         return {
-          points: [
-            `${Math.round(n['energy-kcal_100g'] || 0)} calories`,
-            n['sugars_100g'] > 10 ? 'High Sugar' : 'Low Sugar'
-          ]
+          points: analysis.nutrition_highlights?.slice(0, 3) || ["Checking macros...", "Analyzing values...", "Calculating..."]
         };
       case 'ingredients':
-        const additivesCount = productData.additives_tags?.length || 0;
-        const palmOil = productData.ingredients_text?.toLowerCase().includes('palm');
         return {
-          points: [
-            `${additivesCount} Additives`,
-            palmOil ? 'Contains Palm Oil' : 'No Palm Oil'
-          ]
+          points: analysis.ingredients_summary?.slice(0, 3) || ["Checking labels...", "Scanning list...", "Reviewing..."]
         };
       case 'risks':
         const risk1 = analysis.health_risks?.[0] || "None detected";
         const risk2 = analysis.health_risks?.[1] || "Safe to consume";
+        const risk3 = analysis.health_risks?.[2] || "No major risks";
         return {
           points: [
-            risk1.length > 15 ? risk1.substring(0, 15) + '...' : risk1,
-            risk2.length > 15 ? risk2.substring(0, 15) + '...' : risk2
+            risk1.length > 25 ? risk1.substring(0, 25) + '...' : risk1,
+            risk2.length > 25 ? risk2.substring(0, 25) + '...' : risk2,
+            risk3.length > 25 ? risk3.substring(0, 25) + '...' : risk3
           ]
         };
       case 'alternatives':
         return {
-          points: [
-            "Better options",
-            "Healthier swaps"
-          ]
+          points: analysis.alternatives?.slice(0, 3) || ["Better options", "Healthier swaps", "Clean choices"]
         };
       default:
         return { points: [] };
@@ -152,7 +142,10 @@ const App = () => {
             {
               "grade": "S"|"A"|"B"|"C"|"D"|"F",
               "reasoning": "Short, punchy explanation.",
-              "health_risks": ["Risk 1", "Risk 2"]
+              "health_risks": ["Risk 1", "Risk 2", "Risk 3"],
+              "ingredients_summary": ["Point 1", "Point 2", "Point 3"],
+              "nutrition_highlights": ["Point 1", "Point 2", "Point 3"],
+              "alternatives": ["Option 1", "Option 2", "Option 3"]
             }`
           },
           { role: "user", content: JSON.stringify(productContext) }
@@ -383,15 +376,17 @@ const App = () => {
                     onClick={handleLootClick}
                     className="col-span-1 bg-white border-2 border-black border-b-[6px] rounded-[1.5rem] p-4 flex flex-col justify-between h-40 group active:border-b-2 active:translate-y-1 transition-all cursor-pointer text-left"
                   >
+                    
                     <div className="flex justify-between items-start w-full">
                        <div className="p-2 bg-orange-100 text-orange-600 rounded-lg border-2 border-orange-200 group-hover:rotate-12 transition-transform">
                           {lootCount === "..." ? <RefreshCw size={20} className="animate-spin"/> : <Scroll size={20} />}
+                          
                        </div>
                        <ChevronRight size={20} className="text-slate-300" />
                     </div>
                     <div>
-                      <div className="text-3xl font-black text-slate-900">{lootCount}</div>
-                      <div className="text-xs font-bold text-slate-400 uppercase leading-tight">Total Items<br/>Scanned</div>
+                      <div className="text-3xl font-black text-slate-900">{lootCount}</div> Items Scanned
+                      <div className="text-xs font text-slate-400 leading-tight"><b>FoodDEX</b></div>
                     </div>
                   </button>
 
@@ -410,7 +405,7 @@ const App = () => {
                     
                     <div className="absolute inset-0 flex items-center justify-between px-8">
                        <div className="flex flex-col text-left">
-                          <span className="text-4xl font-black text-black uppercase italic tracking-tighter">Scan Loot</span>
+                          <span className="text-4xl font-black text-black uppercase tracking-tighter">Scan Loot</span>
                           <span className="text-xs font-black text-black/60 uppercase tracking-widest bg-white/30 inline-block px-2 py-0.5 rounded w-fit">Identify Target</span>
                        </div>
                        <div className="w-16 h-16 bg-white border-2 border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-6 transition-transform">
@@ -440,7 +435,10 @@ const App = () => {
                   <div className="col-span-2">
                     <div className="flex items-center justify-between mb-2 mt-2 px-1">
                       <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Recent Drops</h3>
-                      <button className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">View All</button>
+                      <button className="flex items-center gap-1 text-[10px] font-black text-slate-900 bg-white border-2 border-black rounded-lg pl-3 pr-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-none transition-all uppercase group">
+                        View All
+                        <ChevronRight size={14} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" /> 
+                      </button> 
                     </div>
                     
                     <div className="space-y-2">
@@ -609,10 +607,10 @@ const App = () => {
                   
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { id: 'ingredients', label: 'Ingredients', icon: '🧪' },
+                      { id: 'ingredients', label: 'Ingredients', icon: '🌿' },
                       { id: 'nutrition', label: 'Nutrition', icon: '📊' },
-                      { id: 'risks', label: 'Risks', icon: '💀' },
-                      { id: 'alternatives', label: 'Alternatives', icon: '💎' }
+                      { id: 'risks', label: 'Risks', icon: '⚠️' },
+                      { id: 'alternatives', label: 'Alternatives', icon: '🥗' }
                     ].map((topic) => {
                       const details = getTopicDetails(topic.id);
                       
@@ -637,8 +635,8 @@ const App = () => {
                                </div>
                              ))}
                           </div>
-
-                          <div className="inline-block bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 text-[8px] font-black uppercase text-slate-600">
+                             
+                          <div className="inline-flex items-center gap-1 bg-black border-2 border-black rounded-lg px-2 py-1 shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] text-[8px] font-black uppercase text-white group-hover:translate-x-0.5 transition-transform">
                              Know More
                           </div>
                         </button>
