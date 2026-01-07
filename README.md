@@ -1,6 +1,6 @@
 
 
-# Gut Feeling (v1.0)
+# Gut Feeling 
 
 **Gut Feeling** is a gamified, high-performance nutritional analysis engine designed to turn the "boring" task of reading food labels into an interactive RPG experience. By leveraging the **Open Food Facts API** and state-of-the-art **Open Source Large Language Models**, we provide brutal, honest, and instant feedback on your food choices.
 
@@ -148,4 +148,4 @@ npm start
 ---
 
 **Built for a healthier world.**
-[Live Demo](https://www.google.com/search?q=https://www.gut-feeling.netlify.app) | [Open Food Facts](https://world.openfoodfacts.org/)
+[Live Demo](https://www.gut-feeling.netlify.app) | [Open Food Facts](https://world.openfoodfacts.org/)
