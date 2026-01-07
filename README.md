@@ -8,7 +8,7 @@
 
 ## Live Demo
 
-Experience the "Oracle" in real-time: [www.gut-feeling.netlify.app](https://www.google.com/search?q=https://www.gut-feeling.netlify.app)
+Experience the "FoodDex" (pokedex but for your food!) in real-time: [www.gut-feeling.netlify.app](https://www.gut-feeling.netlify.app)
 
 ---
 
@@ -80,13 +80,20 @@ The "Judgment" screen where the Oracle delivers the verdict.
 * **Brutal Reasoning:** A short, punchy explanation from the LLM (e.g., "Liquid Poison. 40g Sugar. Nerf immediately.")
 * **Deep Dive Grid:** Four interactive tiles: **Ingredients, Nutrition, Risks, and Alternatives**. Each shows two sub-points (e.g., "3 Additives," "High Sodium") and a "Know More" button.
 
-### 4. Oracle Chat (The Comms Link)
+### 4. Chat (The Comms Link)
 
 ![Oracle Chat](readme/4.jpeg)
 A Discord-inspired terminal to deep-dive into the data.
 
 * **Visual Verdict Card:** A detailed RPG stat sheet inside the chat. It calculates the **Macro Split** (Carbs vs. Fat vs. Protein) and displays it as a health bar. It removes the "Grey Space" of traditional labels by showing exactly what makes up the product's mass.
 * **Interactive Command Chips:** Quick-tap prompts like "🤰 Pregnant safe?" or "💪 Protein Stats?" to bypass typing.
+
+### 5. Direct Image Analysis (Visual Intelligence)
+![Image Upload](readme/5.png)
+For loose items (like fruits) or products without a barcode, users can tap "Consult AI" on the home screen to upload a photo directly.
+
+* **Computer Vision:** Powered by **Qwen 2.5-VL**, the system "sees" the food in the image.
+* **Instant Appraisal:** It identifies the food item, estimates portion size/calories, and provides the same S-F grading system as scanned products.
 
 ---
 
@@ -120,9 +127,7 @@ npm install
 3. **Configure Environment Variables:**
 Create a `.env` file in the root directory:
 ```env
-REACT_APP_OPENAI_API_KEY=your_inference_api_key
-REACT_APP_BASE_URL=https://api.deepinfra.com/v1/openai (or other provider)
-
+VITE_OPENAI_API_KEY=your_inference_api_key
 ```
 
 
