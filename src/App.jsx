@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 import axios from 'axios';
 import { Camera, MessageCircle, AlertTriangle, Zap, Trophy, ChevronRight, ScanLine, Loader, Shield, Scroll, Activity, RefreshCw, Clock } from 'lucide-react';
@@ -13,6 +13,8 @@ const App = () => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState(null);
+  
+  const scanningRef = useRef(false);
   
   // Gamification & Interaction States
   const [xp, setXp] = useState(340);
@@ -165,21 +167,32 @@ const App = () => {
   };
 
   const fetchProduct = async (barcode) => {
+    // Prevent multiple scans or processing while already busy
+    if (scanningRef.current) return;
+    scanningRef.current = true;
+
     setLoading(true);
     try {
       const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
       if (response.data.status === 1) {
         setProductData(response.data.product);
-        analyzeWithLLM(response.data.product);
+        // This will change the view, effectively stopping the scanner
+        await analyzeWithLLM(response.data.product);
       } else {
         alert("Product not found! Try scanning again.");
+        // If not found, stay on scan view
         setView('scan');
       }
     } catch (error) {
       console.error(error);
       alert("Error fetching product data.");
+    } finally {
+      setLoading(false);
+      // Small delay to prevent double-triggering
+      setTimeout(() => {
+        scanningRef.current = false;
+      }, 1000);
     }
-    setLoading(false);
   };
 
   // --- BACKGROUND PATTERN ---
@@ -487,15 +500,19 @@ const App = () => {
                 className="flex flex-col items-center h-full px-6 pt-8"
               >
                 <div className="w-full aspect-square bg-black rounded-[2.5rem] overflow-hidden relative shadow-2xl border-[6px] border-slate-800">
-                  {!loading ? (
+                  <div className={loading ? "hidden" : "block"}>
                     <BarcodeScannerComponent
                       width={500}
                       height={500}
+                      videoConstraints={{
+                        facingMode: 'environment'
+                      }}
                       onUpdate={(err, result) => {
                         if (result) fetchProduct(result.text);
                       }}
                     />
-                  ) : (
+                  </div>
+                  {loading && (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-white">
                       <Loader className="animate-spin" size={40} />
                       <span className="font-black text-xl tracking-widest">DECODING...</span>

@@ -201,6 +201,7 @@ const ChatInterface = ({ productData, analysis, onReset, initialTopic }) => {
                   CRITICAL RULE: Keep response UNDER 100 WORDS. 
                   Format: 2-3 short bullet points. 
                   Tone: Robotic/Gaming HUD style. No intro/outro.
+                  LANGUAGE: ENGLISH ONLY. Do not use Chinese characters.
                 `;
 
                 const apiMessages = [{ role: "system", content: systemContext }, ...initialMsgs];
@@ -263,8 +264,8 @@ const ChatInterface = ({ productData, analysis, onReset, initialTopic }) => {
 
     try {
       const systemContext = productData 
-        ? `CONTEXT: User is asking about ${productData.product_name}. VERDICT: The following but without jargon and reducing cognitive load: ${JSON.stringify(analysis)}. PERSONA: Video game guide / sassy robot / helpful copilot. Use gaming terms (buff, nerf, xp, stats) where appropriate. Short answers.`
-        : `CONTEXT: User uploaded food image. PERSONA: Identify food, grade it (S-F). Gaming terminology.`;
+        ? `CONTEXT: User is asking about ${productData.product_name}. VERDICT: The following but without jargon and reducing cognitive load: ${JSON.stringify(analysis)}. PERSONA: Video game guide / sassy robot / helpful copilot. Use gaming terms (buff, nerf, xp, stats) where appropriate. Short answers. LANGUAGE: ENGLISH ONLY.`
+        : `CONTEXT: User uploaded food image. PERSONA: Identify food, grade it (S-F). Gaming terminology. LANGUAGE: ENGLISH ONLY.`;
 
       const apiMessages = [
         { role: "system", content: systemContext },
