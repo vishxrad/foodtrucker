@@ -8,7 +8,7 @@
 
 ## Live Demo
 
-Experience the "FoodDex" (pokedex but for your food!) in real-time: [www.gut-feeling.netlify.app](https://www.gut-feeling.netlify.app)
+Experience the "FoodDex" (pokedex but for your food!) in real-time: [www.gut-feeling.netlify.app](https://gut-feeling.netlify.app)
 
 ---
 
