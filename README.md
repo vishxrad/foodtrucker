@@ -111,7 +111,7 @@ For loose items (like fruits) or products without a barcode, users can tap "Cons
 
 1. **Clone the Repository:**
 ```bash
-git clone https://github.com/yourusername/gut-feeling.git
+git clone https://github.com/vishxrad/foodtrucker.git
 cd gut-feeling
 
 ```
